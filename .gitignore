@@ -4,3 +4,7 @@
 *.db
 .beads-credential-key
 .beads/issues.jsonl
+
+# JavaScript / TypeScript build outputs
+node_modules/
+dist/
