@@ -51,9 +51,23 @@ describe("configuration resolution", () => {
 
   it("skips agents without config in opt-in mode", () => {
     const { logger } = captureWarnings();
-    const baseDefaults = buildBaseDefaults({ retainBanks: ["base"] }, logger);
+    const baseDefaults = buildBaseDefaults(undefined, logger);
 
     expect(resolveAgentConfig(undefined, baseDefaults, "opt-in", logger)).toBeUndefined();
+  });
+
+  it("uses configured defaults as the opt-in signal", () => {
+    const { logger } = captureWarnings();
+    const baseDefaults = buildBaseDefaults({ autoRetainBank: "project", retainBanks: ["project"] }, logger);
+
+    expect(resolveAgentConfig(undefined, baseDefaults, "opt-in", logger)).toEqual({
+      autoRetainBank: "project",
+      retainBanks: ["project"],
+      autoRecallBanks: [],
+      recallBanks: [],
+      retainMode: "full-session",
+      retainEveryNTurns: 3,
+    });
   });
 
   it("skips agents that explicitly disable hindsight", () => {
@@ -124,6 +138,35 @@ describe("configuration resolution", () => {
 
     expect(cache.get("build")?.retainBanks).toEqual(["build-bank"]);
     expect(cache.has("plan")).toBe(false);
+  });
+
+  it("applies configured defaults to agents in opt-in mode", async () => {
+    const { logger } = captureWarnings();
+    const cache = new Map<string, ResolvedAgentConfig>();
+    const hook = createConfigHook({
+      agentConfigs: cache,
+      baseDefaults: buildBaseDefaults(
+        {
+          autoRetainBank: "stacked-chips-infrastructure",
+          retainBanks: ["stacked-chips-infrastructure"],
+          autoRecallBanks: ["stacked-chips-infrastructure"],
+          recallBanks: ["stacked-chips-infrastructure"],
+        },
+        logger
+      ),
+      applyMode: "opt-in",
+      logger,
+    });
+
+    await hook({
+      agent: {
+        build: {},
+        plan: {},
+      },
+    });
+
+    expect(cache.get("build")?.autoRetainBank).toBe("stacked-chips-infrastructure");
+    expect(cache.get("plan")?.autoRecallBanks).toEqual(["stacked-chips-infrastructure"]);
   });
 
   it("resolves and caches unknown agents on the fly", () => {

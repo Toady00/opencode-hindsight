@@ -111,6 +111,18 @@ describe("state management", () => {
     expect(getAgentConfig("late-agent")?.retainBanks).toEqual(["team"]);
   });
 
+  it("uses configured defaults for session-created agents in opt-in mode", () => {
+    initState({
+      defaults: { autoRetainBank: "project", retainBanks: ["project"] },
+      applyMode: "opt-in",
+      logger: { warn: () => {} },
+    });
+
+    handleSessionEvent(eventFor(session({ id: "root", agent: "build" })));
+
+    expect(getAgentConfig("build")?.autoRetainBank).toBe("project");
+  });
+
   it("uses raw agent hindsight config from dynamic session events in opt-in mode", () => {
     initState({ applyMode: "opt-in", logger: { warn: () => {} } });
     const dynamicSession = {

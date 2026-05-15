@@ -1,6 +1,6 @@
 {
   "name": "@toady00/opencode-hindsight",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Per-agent Hindsight memory plugin for opencode",
   "type": "module",
   "main": "./dist/index.js",

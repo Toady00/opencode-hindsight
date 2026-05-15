@@ -5,7 +5,7 @@ memory system. The plugin gives each opencode agent its own configurable memory
 behavior, including separate banks for automatic retention, automatic recall,
 and manual tool usage.
 
-> **Status:** `0.1.1` is an alpha bugfix release. Expect rough edges and test
+> **Status:** `0.1.2` is an alpha bugfix release. Expect rough edges and test
 > with non-critical memory banks before relying on it for important workflows.
 
 ## Features
@@ -119,6 +119,10 @@ With this configuration, root sessions automatically recall from `project` at
 startup, retain transcripts to `project` as the session goes idle, and expose
 manual retain/recall/reflect tools for configured agents.
 
+By default, automatic retention waits for three new user turns before retaining.
+Set `retainEveryNTurns` to `1` while smoke-testing if you want the first idle
+event after a prompt to retain immediately.
+
 ## Plugin Options
 
 | Option | Description | Default |
@@ -206,8 +210,10 @@ Every agent receives the plugin defaults unless it opts out with:
 
 ### `applyMode: "opt-in"`
 
-Only agents with an explicit `options.hindsight` configuration receive
-Hindsight behavior. Agents without `options.hindsight` are skipped.
+Agents with explicit `options.hindsight` configuration receive Hindsight
+behavior. If plugin-level `defaults` configure any banks, those defaults also
+apply to agents without `options.hindsight`; otherwise, unconfigured agents are
+skipped.
 
 ## Automatic Recall
 

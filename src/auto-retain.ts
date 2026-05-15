@@ -22,25 +22,48 @@ export async function handleAutoRetainEvent(
   input: { event: unknown },
   client: OpenCodeMessagesClientLike,
   hindsightClient: HindsightClientWrapper,
-  debug: Pick<DebugLogger, "error"> = NOOP_DEBUG
+  debug: Pick<DebugLogger, "error"> & Partial<Pick<DebugLogger, "debug">> = NOOP_DEBUG
 ): Promise<void> {
   const sessionID = getIdleSessionID(input.event);
   if (!sessionID) return;
+  debug.debug?.(`Auto-retain idle event received for session "${sessionID}".`);
 
   const meta = await getCachedOrFetchedSessionMeta(sessionID, client);
-  if (!meta || meta.isChild) return;
+  if (!meta) {
+    debug.debug?.(`Auto-retain skipped for session "${sessionID}": session metadata unavailable.`);
+    return;
+  }
+  if (meta.isChild) {
+    debug.debug?.(`Auto-retain skipped for session "${sessionID}": child sessions are ignored.`);
+    return;
+  }
 
   const config = getOrResolveAgentConfig(meta.agent);
-  if (!config?.autoRetainBank) return;
+  if (!config?.autoRetainBank) {
+    debug.debug?.(`Auto-retain skipped for session "${sessionID}": agent "${meta.agent}" has no autoRetainBank.`);
+    return;
+  }
 
   const messages = await fetchSessionMessages(client, sessionID, debug);
   const currentTurns = countUserTurns(messages);
   const lastRetained = getLastRetainedTurn(sessionID);
+  debug.debug?.(
+    `Auto-retain turn check for session "${sessionID}": current=${currentTurns}, lastRetained=${lastRetained}, threshold=${config.retainEveryNTurns}.`
+  );
 
-  if (currentTurns - lastRetained < config.retainEveryNTurns) return;
+  if (currentTurns - lastRetained < config.retainEveryNTurns) {
+    debug.debug?.(`Auto-retain skipped for session "${sessionID}": waiting for more user turns.`);
+    return;
+  }
 
   const retained = await performRetain(sessionID, messages, config, hindsightClient);
-  if (retained) setLastRetainedTurn(sessionID, currentTurns);
+  if (retained) {
+    setLastRetainedTurn(sessionID, currentTurns);
+    debug.debug?.(`Auto-retain completed for session "${sessionID}" to bank "${config.autoRetainBank}".`);
+    return;
+  }
+
+  debug.debug?.(`Auto-retain failed for session "${sessionID}" to bank "${config.autoRetainBank}".`);
 }
 
 export async function handleCompactionRetain(
@@ -138,7 +161,7 @@ export async function getCachedOrFetchedSessionMeta(
   return getOrFetchSessionMeta(sessionID, { session: { get: client.session.get } });
 }
 
-const NOOP_DEBUG: Pick<DebugLogger, "error"> = { error: () => {} };
+const NOOP_DEBUG: Pick<DebugLogger, "debug" | "error"> = { debug: () => {}, error: () => {} };
 
 function formatError(error: unknown): string {
   if (error instanceof Error) return error.stack ?? error.message;

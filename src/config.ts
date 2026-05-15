@@ -65,7 +65,9 @@ export function resolveAgentConfig(
 
   const { enabled: _ignoredEnabled, ...agentConfigWithoutEnabled } = agentConfig ?? {};
 
-  if (applyMode === "opt-in" && agentConfig === undefined) return undefined;
+  if (applyMode === "opt-in" && agentConfig === undefined && !hasConfiguredBehavior(baseDefaults)) {
+    return undefined;
+  }
 
   return validateConfig({ ...baseDefaults, ...agentConfigWithoutEnabled }, logger);
 }
@@ -233,6 +235,15 @@ function validateRetainEveryNTurns(value: number | undefined, logger: ConfigLogg
   }
 
   return candidate;
+}
+
+function hasConfiguredBehavior(config: ResolvedAgentConfig): boolean {
+  return (
+    !!config.autoRetainBank ||
+    config.retainBanks.length > 0 ||
+    config.autoRecallBanks.length > 0 ||
+    config.recallBanks.length > 0
+  );
 }
 
 function readConfigInput(input: ConfigHookInput): HindsightConfigShape {

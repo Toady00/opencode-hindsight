@@ -9,7 +9,16 @@ import {
 } from "./auto-retain.js";
 import type { TranscriptMessage } from "./content.js";
 import type { HindsightClientWrapper } from "./hindsight-client.js";
-import { clearStateForTests, getLastRetainedTurn, setAgentConfig, setLastRetainedTurn, setSessionMeta } from "./state.js";
+import {
+  clearStateForTests,
+  createStateConfigHook,
+  getLastRetainedTurn,
+  handleSessionEvent,
+  initState,
+  setAgentConfig,
+  setLastRetainedTurn,
+  setSessionMeta,
+} from "./state.js";
 import type { ResolvedAgentConfig } from "./types.js";
 
 function message(role: "user" | "assistant", content: string): TranscriptMessage {
@@ -92,6 +101,50 @@ describe("auto-retain", () => {
     await handleAutoRetainEvent(idleEvent("s2"), openCode, client);
 
     expect(calls.map((call) => call.bankId)).toEqual(["build-bank", "plan-bank"]);
+  });
+
+  it("auto-retains with opt-in mode and configured plugin defaults", async () => {
+    initState({
+      applyMode: "opt-in",
+      defaults: {
+        autoRetainBank: "stacked-chips-infrastructure",
+        retainBanks: ["stacked-chips-infrastructure"],
+        autoRecallBanks: ["stacked-chips-infrastructure"],
+        recallBanks: ["stacked-chips-infrastructure"],
+      },
+      logger: { warn: () => {} },
+    });
+    await createStateConfigHook()({ agent: { build: {}, plan: {} } });
+    handleSessionEvent({
+      event: {
+        type: "session.created",
+        properties: {
+          info: {
+            id: "session-1",
+            agent: "build",
+          },
+        },
+      },
+    });
+    const { client, calls } = hindsightClient();
+    const openCode = messagesClient([
+      message("user", "one"),
+      message("assistant", "done"),
+      message("user", "two"),
+      message("assistant", "done"),
+      message("user", "three"),
+      message("assistant", "done"),
+    ]);
+
+    await handleAutoRetainEvent(idleEvent("session-1"), openCode, client);
+
+    expect(calls).toEqual([
+      {
+        bankId: "stacked-chips-infrastructure",
+        content: "User: one\n\nAssistant: done\n\nUser: two\n\nAssistant: done\n\nUser: three\n\nAssistant: done",
+        documentId: "session-1",
+      },
+    ]);
   });
 
   it("skips missing banks, child sessions, and premature throttled sessions", async () => {
