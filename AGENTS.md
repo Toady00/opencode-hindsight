@@ -43,7 +43,7 @@ cp -rf source dest          # NOT: cp -r source dest
 
 ## Release Pitfalls
 
-- `npm publish` for `@toady00/opencode-hindsight` can fail with `404 Not Found` even when `npm view` can read the package if npm auth is missing/stale or the current npm account lacks publish rights to the scope/package. First run `npm login` or check `npm whoami`; if publish rights are the blocker, upload the `npm pack` tarball to the GitHub release for testing and file follow-up work for npm permissions.
+- `npm publish` for `@toady00/opencode-hindsight` can fail with `404 Not Found` even when `npm view` can read the package if npm auth is missing/stale or the current npm account lacks publish rights to the scope/package. First run `npm login` or check `npm whoami`; if publish rights are the blocker, upload the `npm pack` tarball to the GitHub release for testing and file follow-up work for npm permissions. If publish fails with `EOTP`, npm 2FA/browser OTP must be completed interactively by the logged-in maintainer.
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
 ## Beads Issue Tracker
