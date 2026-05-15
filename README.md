@@ -5,7 +5,7 @@ memory system. The plugin gives each opencode agent its own configurable memory
 behavior, including separate banks for automatic retention, automatic recall,
 and manual tool usage.
 
-> **Status:** `0.0.1` is the first alpha iteration. Expect rough edges and test
+> **Status:** `0.1.1` is an alpha bugfix release. Expect rough edges and test
 > with non-critical memory banks before relying on it for important workflows.
 
 ## Features
